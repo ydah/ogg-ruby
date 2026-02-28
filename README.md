@@ -1,4 +1,4 @@
-# ogg-ruby
+# ogg-ruby [![Gem Version](https://badge.fury.io/rb/ogg-ruby.svg)](https://badge.fury.io/rb/ogg-ruby) [![Ruby](https://github.com/ydah/ogg-ruby/actions/workflows/main.yml/badge.svg)](https://github.com/ydah/ogg-ruby/actions/workflows/main.yml)
 
 Ruby FFI bindings for [libogg](https://xiph.org/ogg/), the OGG container format library.
 
