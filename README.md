@@ -1,38 +1,107 @@
-# Ogg
+# ogg-ruby
 
-TODO: Delete this and the text below, and describe your gem
+Ruby FFI bindings for [libogg](https://xiph.org/ogg/), the OGG container format library.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ogg`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Requirements
+
+- Ruby 3.1+
+- libogg installed on your system
+
+### Installing libogg
+
+**macOS:**
+
+```bash
+brew install libogg
+```
+
+**Debian/Ubuntu:**
+
+```bash
+sudo apt-get install libogg-dev
+```
+
+**Fedora/RHEL:**
+
+```bash
+sudo dnf install libogg-devel
+```
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Add this line to your application's Gemfile:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem "ogg-ruby"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+And then execute:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
+```
+
+Or install it yourself as:
+
+```bash
+gem install ogg-ruby
 ```
 
 ## Usage
 
-TODO: Write usage instructions here
+### Encoding (Packet → StreamState → Page)
 
-## Development
+```ruby
+require "ogg"
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+stream = Ogg::StreamState.new(1) # serial number
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+# Add packets to the stream
+packet = Ogg::Packet.new(data: "Hello, OGG!", bos: true, granulepos: 0, packetno: 0)
+stream.packetin(packet)
 
-## Contributing
+packet2 = Ogg::Packet.new(data: "More data", eos: true, granulepos: 1, packetno: 1)
+stream.packetin(packet2)
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/ogg.
+# Extract pages
+pages = []
+while (page = stream.flush)
+  pages << page.to_s
+end
+
+stream.clear
+```
+
+### Decoding (SyncState → Page → StreamState → Packet)
+
+```ruby
+require "ogg"
+
+sync = Ogg::SyncState.new
+
+# Write encoded data into sync
+sync.write(encoded_page_data)
+
+# Extract pages
+while (page = sync.pageout)
+  # Create a stream decoder with the same serial number
+  stream = Ogg::StreamState.new(page.serialno)
+  stream.pagein(page)
+
+  # Extract packets
+  while (packet = stream.packetout)
+    puts packet.data
+  end
+
+  stream.clear
+end
+
+sync.clear
+```
+
+## Thread Safety
+
+libogg functions are not thread-safe. Do not share `SyncState` or `StreamState` objects across threads without external synchronization.
 
 ## License
 
